@@ -11,5 +11,5 @@ go RunHeartbeatService(":10101")
 To have build number, build your go program with the following option:
 
 ```console
-go build --ldflags="-X github.com/enbritely/heartbeat.CommitHash `git rev-parse HEAD`"
+go build --ldflags="-X github.com/enbritely/heartbeat-golang.CommitHash `git rev-parse HEAD`"
 ```
