@@ -50,7 +50,7 @@ func handler(rw http.ResponseWriter, r *http.Request) {
 	if hash == "" {
 		hash = NotAvailableMessage
 	}
-	uptime := time.Now().Sub(StartTime).String()
+	uptime := time.Since(StartTime).String()
 	err := json.NewEncoder(rw).Encode(HeartbeatMessage{"running", hash, uptime})
 	if err != nil {
 		log.Fatalf("Failed to write heartbeat message. Reason: %s", err.Error())
