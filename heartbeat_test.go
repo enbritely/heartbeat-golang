@@ -2,21 +2,11 @@ package heartbeat
 
 import (
 	"encoding/json"
-	"errors"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
 	"testing"
-	"time"
 )
-
-type testHandler struct {
-}
-
-func (t testHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	handler(w, r)
-}
 
 type testGetHandler struct {
 	JsonReturn string
@@ -30,58 +20,43 @@ func (t testGetHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	} else {
 		w.Write([]byte(t.JsonReturn))
 	}
-
-}
-
-func init() {
-	StartTime = time.Date(2015, 11, 27, 11, 47, 00, 00, time.UTC)
 }
 
 func TestHandler(t *testing.T) {
 
 	var TestValues = []struct {
-		Hash       string
-		HashResult string
+		RW           *httptest.ResponseRecorder
+		Hash         string
+		ExpectedHash string
 	}{
-		{"", NotAvailableMessage},
-		{"testHash", "testHash"},
+		{
+			httptest.NewRecorder(),
+			"testHash",
+			"testHash",
+		},
+		{
+			httptest.NewRecorder(),
+			"",
+			NotAvailableMessage,
+		},
 	}
 
 	for _, tv := range TestValues {
 		CommitHash = tv.Hash
 
-		ts := httptest.NewServer(testHandler{})
-		defer ts.Close()
+		handler(tv.RW, nil)
 
-		res, err := http.Get(ts.URL)
+		hm := HeartbeatMessage{}
+		err := json.NewDecoder(tv.RW.Body).Decode(&hm)
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		respJson, err := ioutil.ReadAll(res.Body)
-		res.Body.Close()
-
-		var hm HeartbeatMessage
-		err = json.Unmarshal(respJson, &hm)
-		if err != nil {
-			t.Fatal(err)
+		if hm.Build != tv.ExpectedHash {
+			t.Error("Wrong hash! Expected:", tv.ExpectedHash, "Got:", hm.Build)
 		}
-
 		if hm.Status != "running" {
-			t.Error(errors.New("The server should running"))
-		}
-
-		if hm.Build != tv.HashResult {
-			t.Error(errors.New("Wrong commit hash"))
-		}
-
-		uptime, err := time.ParseDuration(hm.Uptime)
-		if err != nil {
-			t.Error(err)
-		}
-
-		if uptime > time.Since(StartTime) {
-			t.Error(errors.New("Wrong uptime"))
+			t.Error("Wrong status! Expected: running", "Got:", hm.Status)
 		}
 	}
 }
