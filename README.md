@@ -1,5 +1,5 @@
 # Heartbeat library
-
+[![Build Status](https://travis-ci.org/enbritely/heartbeat-golang.svg)](https://travis-ci.org/enbritely/heartbeat-golang)
 ## Usage
 
 Include the following in your code to run the heartbeat service on your `10101` port:
